@@ -4,12 +4,16 @@
 This is the canonical reference for all AI agents and contributors.
 The rules in this file are **mandatory and proactive** — no user prompt required to enforce them.
 
+Copy this file verbatim to `tasks/TASK-DESIGN.md` at init.
+
 ---
 
 ## What Requires a Task Entry
 
-- **Always create a task:** meaningful changes to logic, structure, or behaviour; anything explicitly requested by the user
-- **No task needed:** trivial mechanical edits (typo fixes, version number bumps, single-line config changes)
+- **Always create a task:** meaningful changes to logic, structure, or behaviour;
+  anything explicitly requested by the user; **any planning, brainstorming, grilling,
+  or design session** (the session's artifacts live inside the task — see below).
+- **No task needed:** trivial mechanical edits (typo fixes, version bumps, single-line config).
 
 When in doubt: if the change could break something or requires thought, create a task.
 
@@ -18,25 +22,47 @@ When in doubt: if the change could break something or requires thought, create a
 ## Two Levels of Work
 
 ### Epic
-A large initiative with a goal, PRD, and a set of tasks.
+A large initiative with a goal, a PRD, and a set of tasks.
 
-- Lives as a directory in `future/`, `current/`, or `completed/`
-- Has a `task.md` header, `prd.md`, and `kanban.md`
-- Contains a `tasks/` subdirectory with its work units
+- Lives as a directory in `future/`, `current/`, or `completed/`, named `epic-<slug>/`
+- Has a `task.md` header, a `prd.md`, and a `kanban.md`
+- Contains a `tasks/` subdirectory holding its work units
 
 ### Task (within an Epic)
 An independently-testable unit of work inside an epic.
 
 - Lives inside the epic under `tasks/<task-slug>/`
-- Has a `task.md` header and optional `plan.md`
+- Has a `task.md` header and any planning artifacts it needs (`plan.md`, `brainstorm.md`)
 - Must have a `test_criteria` field — if you cannot test it independently, it is too large
 
 ### Standalone
 A meaningful change with no parent epic.
 
-- Lives directly in `future/`, `current/`, or `completed/`
+- Lives directly in `future/`, `current/`, or `completed/`, named `task-<slug>/`
 - Has a `task.md` header only (no `kanban.md`, no sub-tasks)
 - Distinguished by `type: standalone`
+
+---
+
+## Task Directories Are Containers for Planning Artifacts
+
+A task or epic directory holds **everything** about that work — not just the header.
+This is where PRDs, brainstorms, and plans live. PRDs are always task- or epic-specific.
+
+```
+tasks/current/epic-<slug>/
+├── task.md          # epic header (required)
+├── prd.md           # product requirements for the epic (required for epics)
+├── kanban.md        # task board (required for epics)
+└── tasks/
+    └── task-1-<slug>/
+        ├── task.md       # task header (required)
+        ├── plan.md       # implementation plan (optional)
+        └── brainstorm.md # output of a grilling/brainstorming session (optional)
+```
+
+When you run a brainstorming or grilling session, create the task first, then write the
+session output into that directory. The session is the work; the task tracks it.
 
 ---
 
@@ -83,23 +109,6 @@ created: YYYY-MM-DD
 ---
 ```
 
-### prd.md — Epic Product Requirements
-```markdown
-# PRD: <Epic Name>
-
-## Goal
-What does completing this epic achieve? One paragraph.
-
-## Requirements
-- Specific, testable requirement 1
-- Specific, testable requirement 2
-- (each requirement maps to one or more tasks)
-
-## Out of Scope
-- Explicit non-goal 1 (prevents scope creep)
-- Explicit non-goal 2
-```
-
 ### kanban.md — Epic Task Board
 ```markdown
 # Epic: <slug> — Kanban
@@ -117,6 +126,58 @@ What does completing this epic achieve? One paragraph.
 
 ---
 
+## prd.md — Epic Product Requirements
+
+Every epic has a `prd.md` in its directory. Keep it under one page. If it grows past
+one page, the epic is too big — split it.
+
+```markdown
+# PRD: <Epic Name>
+
+## Goal
+What does completing this epic achieve? One paragraph.
+Write from the perspective of value delivered, not tasks completed.
+
+Good: "Users can log in with email/password and stay authenticated across sessions."
+Bad:  "Implement authentication endpoint and session management."
+
+## Requirements
+- [Specific, testable requirement]
+- [Specific, testable requirement]
+- (each requirement maps to one or more tasks)
+
+## Out of Scope
+- [Explicit non-goal — prevents scope creep]
+- [Explicit non-goal]
+```
+
+### What makes a good requirement
+Each requirement must be **specific**, **testable**, **atomic**, and **in scope**.
+
+| ❌ Bad requirement | ✅ Good requirement |
+|---|---|
+| Make the system faster | API p95 latency < 200ms measured with k6 |
+| Add authentication | Email/password login returns a JWT; invalid creds return 401 |
+| Fix the UI | Login form shows an inline error for invalid email format |
+| Handle errors properly | All API errors return `{error: string, code: string}` |
+
+### What makes good Out of Scope
+Out of Scope prevents silent scope creep. Include things that someone might reasonably
+assume are included, are deliberately deferred, or would change the effort significantly.
+
+```markdown
+## Out of Scope
+- OAuth / social login (deferred to separate epic)
+- Password reset flow (separate epic)
+- Rate limiting on login endpoint (tracked in backlog)
+```
+
+> **Product direction vs feature scope:** the project's overall direction lives in
+> `docs/VISION.md`, written once. Per-epic feature scope lives in the epic's `prd.md`.
+> Never put feature requirements in VISION.md, and never restate the vision in a PRD.
+
+---
+
 ## Completion Checklist {#completion-checklist}
 
 Every task must pass all applicable steps before `status: completed` is set.
@@ -127,9 +188,9 @@ Run this before closing any task — no exceptions, no reminders needed.
 - [ ] 1. `task.md` — set `status: completed`
 - [ ] 2. `kanban.md` — update row to ✅ completed (epics only)
 - [ ] 3. `tasks/ACTIVE.md` — move task out of In Progress; update Up Next
-- [ ] 4. `tasks/STATUS.md` — update Last updated line
+- [ ] 4. `tasks/STATUS.md` — update the Last updated line + the row
 - [ ] 5. `docs/` — update every file affected by the code change
-         Trigger table → [`docs/NAVIGATION.md`](../docs/NAVIGATION.md)
+         (Doc Trigger Table → [`docs/NAVIGATION.md`](../docs/NAVIGATION.md))
 
 **Folder moves (mandatory, immediate — no deferral):**
 - Completed task → `tasks/completed/`
@@ -137,7 +198,7 @@ Run this before closing any task — no exceptions, no reminders needed.
 - New epic starting → move from `tasks/future/` to `tasks/current/`
 
 **For architectural changes (additional):**
-- [ ] 6. Write ADR in `docs/adr/` if an architectural decision was made
+- [ ] 6. Write an ADR in `docs/adr/` if an architectural decision was made
 - [ ] 7. Update `CLAUDE.md` and `AGENTS.md` identically if any rule or contract changed
 
 **Run before closing:**
@@ -155,7 +216,8 @@ python scripts/validate-project.py
 2. Move to `current/` and update `ACTIVE.md` when work begins.
 3. A task with unresolved dependencies stays in `current/` with `status: blocked`.
 4. Move to `completed/` only after `test_criteria` passes.
-5. Out-of-scope discoveries go to `backlog/discovered-issues.md` or become a new standalone — never absorbed silently into the running task.
+5. Out-of-scope discoveries go to `backlog/discovered-issues.md` or become a new
+   standalone — never absorbed silently into the running task.
 6. Spawned tasks reference their origin: `summary: "Fix X found during epic-Y task-2"`.
 
 ---
@@ -166,7 +228,8 @@ python scripts/validate-project.py
 If you cannot describe the change in one sentence, the task is too large.
 
 ### Independent Testability
-Each task delivers a working, testable artifact. Do not cut tasks in horizontal layers where nothing is verifiable until the last one.
+Each task delivers a working, testable artifact. Do not cut tasks in horizontal layers
+where nothing is verifiable until the last one.
 
 ### One test_criteria per task
 If you need multiple independent criteria, split the task.
@@ -184,16 +247,14 @@ Tasks that can run in parallel have no dependency between them. Make this explic
 
 ---
 
-## ACTIVE.md Contract
+## The Three Dashboards
 
-`ACTIVE.md` is the living state of the repository. It must always reflect reality.
+The task system keeps three living files at `tasks/` root. They must always reflect reality.
 
-Update when:
-- A task moves to `current/`
-- A task's state changes (planned → in_progress → blocked → completed)
-- A task moves to `completed/`
+### ACTIVE.md — what is happening now
+The single source of truth for in-flight work. Update when a task moves to `current/`,
+changes state, or completes.
 
-### Format
 ```markdown
 # Active Work
 _Updated: YYYY-MM-DD_
@@ -216,8 +277,33 @@ _Updated: YYYY-MM-DD_
 ## Recently Completed
 - task-example (YYYY-MM-DD) — one-line description
 ```
-
 Omit any section that has no entries.
+
+### STATUS.md — the master ledger
+One row per task ever created, across all states. The Last updated line changes on every
+state change.
+
+```markdown
+# Task Status Dashboard
+
+**Last updated:** YYYY-MM-DD — <what changed>
+
+| Task | Type | Summary | State | Folder |
+|------|------|---------|-------|--------|
+| epic-example | epic | Short summary | in_progress | current/ |
+```
+
+### NAVIGATION.md — the map
+Explains the directory roles and the lifecycle. Rarely changes after init.
+
+---
+
+## tasks/reviews/ — Review & Audit Records
+
+`tasks/reviews/` holds point-in-time review documents: architecture reviews, code-cleanup
+audits, schema reviews. They are dated, read-only records — not tasks. Name them
+`<topic>-review-YYYY-MM-DD.md`. A review may spawn tasks (in `future/`) or backlog entries;
+link them from the review so the trail is traceable.
 
 ---
 

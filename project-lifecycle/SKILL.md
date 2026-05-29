@@ -1,46 +1,57 @@
 ---
 name: project-lifecycle
-description: Use when initializing a brand-new software project that needs a complete lifecycle system from scratch — task management, documentation, ADRs, PRDs, validation script, and self-contained AGENTS.md/AGENTS.md. Invoke once per new project. Do NOT use for adding features to an existing project.
+description: Use when initializing a brand-new software project that needs a complete lifecycle system from scratch — task management, documentation, ADRs, epic/task PRDs, validation script, and self-contained CLAUDE.md/AGENTS.md. Invoke once per new project. Do NOT use for adding features to an existing project.
 ---
 
 # Project Lifecycle — Init Skill
 
-Initialize any new software project with a complete, self-enforcing lifecycle system. After running this skill, the project has everything needed for AI agents and developers to work without losing context.
+Initialize any new software project with a complete, self-enforcing lifecycle system. After
+running this skill, the project has everything needed for AI agents and developers to work
+without losing context.
 
-**Core principle:** The scaffold is generated once. After init, AGENTS.md is self-contained — AI agents need only read it to know all the rules. The skill disappears from the workflow.
+**Core principle:** The scaffold is generated once. After init, `CLAUDE.md` is self-contained —
+AI agents need only read it to know all the rules. The skill disappears from the workflow.
+
+Every file this skill writes is sourced from this skill's own `references/` directory, so init
+works in any repository on any machine.
 
 ## What Gets Created
 
 ```
 <project-root>/
-├── .Codex/
+├── .claude/
 │   └── settings.local.json     (empty, gitignored)
 ├── tasks/
 │   ├── ACTIVE.md               (living state of repo)
-│   ├── STATUS.md               (master dashboard)
-│   ├── NAVIGATION.md           (system guide)
-│   ├── TASK-DESIGN.md          (full lifecycle spec — copy from reference)
+│   ├── STATUS.md               (master ledger)
+│   ├── NAVIGATION.md           (task system guide)
+│   ├── TASK-DESIGN.md          (full lifecycle spec — from reference)
 │   ├── current/
 │   ├── future/
 │   ├── completed/
+│   ├── reviews/                (dated review/audit records)
 │   └── backlog/
 │       └── discovered-issues.md
 ├── docs/
-│   ├── NAVIGATION.md           (documentation index)
+│   ├── NAVIGATION.md           (doc index + Doc Trigger Table)
 │   ├── VISION.md               (template — fill in)
 │   ├── OVERVIEW.md             (template — fill in)
 │   ├── reference/
 │   │   ├── code-conventions.md (fill in per tech stack)
+│   │   ├── environment.md      (env var reference)
 │   │   └── known-gaps.md       (starts empty)
 │   └── adr/
-│       └── FORMAT.md           (ADR format — copy from reference)
-├── PRDs/
-│   └── FORMAT.md               (PRD format — copy from reference)
+│       └── FORMAT.md           (ADR format — from reference)
 ├── scripts/
-│   └── validate-project.py     (structural validation — copy from reference)
-├── AGENTS.md                   (generated from template)
-└── AGENTS.md                   (exact mirror of AGENTS.md)
+│   └── validate-project.py     (structural validation — from reference)
+├── CLAUDE.md                   (generated/merged from template)
+└── AGENTS.md                   (exact mirror of CLAUDE.md)
 ```
+
+> **PRDs are task- and epic-specific.** A PRD lives *inside* its epic directory
+> (`epic-<slug>/prd.md`). Planning, brainstorming, and grilling sessions each create a task and
+> write their artifacts into that task's directory. See
+> [task-design-template.md](references/task-design-template.md).
 
 ## Step 1 — Interview
 
@@ -65,30 +76,39 @@ Ask these 5 questions before creating any files. Do not proceed without answers.
 ## Step 2 — Create Directory Scaffold
 
 ```bash
-mkdir -p tasks/current tasks/future tasks/completed tasks/backlog
+mkdir -p tasks/current tasks/future tasks/completed tasks/reviews tasks/backlog
 mkdir -p docs/adr docs/reference
-mkdir -p PRDs scripts .Codex
+mkdir -p scripts .claude
 ```
 
-## Step 3 — Generate AGENTS.md and AGENTS.md
+## Step 3 — Generate (or Merge) CLAUDE.md and AGENTS.md
 
-Use [Codex-md-template.md](Codex-md-template.md) as the source.
+Source: [claude-md-template.md](references/claude-md-template.md). Read its "How to apply"
+header — the behavior differs depending on whether the files already exist.
 
-Replace all `{{PLACEHOLDER}}` values with answers from the interview:
-- `{{PROJECT_NAME}}` → answer to Q1
-- `{{DOMAIN_DESCRIPTION}}` → answer to Q2
-- `{{TECH_STACK}}` → answer to Q3
-- `{{ARCHITECTURE_NOTE}}` → answer to Q5
-- `{{SETUP_COMMANDS}}` → fill in project-specific commands
-- `{{ENV_VARS_TABLE}}` → fill in env vars or leave as placeholder row
+Replace every `{{PLACEHOLDER}}` with answers from the interview:
+- `{{PROJECT_NAME}}` → Q1
+- `{{DOMAIN_DESCRIPTION}}` → Q2
+- `{{PRIMARY_LANGUAGE}}` → Q4
+- `{{TECH_STACK}}` → Q3
+- `{{ARCHITECTURE_NOTE}}` → Q5
+- `{{SETUP_COMMANDS}}` → project-specific setup/run commands
+- `{{ENV_VAR}}` / `{{ENV_VARS_TABLE}}` rows → env vars, or leave a single placeholder row
 
-Write the filled template to `AGENTS.md`. Then copy it identically to `AGENTS.md`:
+**If `CLAUDE.md` / `AGENTS.md` do NOT exist:** write the full filled template to both.
+
+**If they already exist:** do NOT overwrite. Prepend the lifecycle block (everything between
+the `<!-- LIFECYCLE:BEGIN -->` and `<!-- LIFECYCLE:END -->` markers) to the top of each file,
+just under the first H1, leaving existing content intact. Then reconcile any duplicated task
+rules — keep the stricter one.
+
+Then ensure the two files are identical:
 ```bash
-cp AGENTS.md AGENTS.md
-diff AGENTS.md AGENTS.md   # must produce no output
+cp CLAUDE.md AGENTS.md
+diff CLAUDE.md AGENTS.md   # must produce no output
 ```
 
-## Step 4 — Create Management Files
+## Step 4 — Create Management & Doc Files
 
 **tasks/ACTIVE.md:**
 ```markdown
@@ -134,6 +154,7 @@ All task status: [tasks/STATUS.md](STATUS.md)
 | `tasks/future/` | Planned but not started | Planning new work |
 | `tasks/current/` | Actively in progress | Starting work |
 | `tasks/completed/` | Done and verified | Closing tasks |
+| `tasks/reviews/` | Dated review/audit records | After a review session |
 | `tasks/backlog/` | Discovered issues, not yet tasked | Finding scope creep |
 
 ## Lifecycle
@@ -155,7 +176,35 @@ Issues found during work that were out of scope for the running task.
 - **Status:** ✅ Fixed | 🔴 Open
 ```
 
-**docs/VISION.md:** Create with section headers only — the project owner fills in content:
+**docs/NAVIGATION.md** — the documentation index and the **canonical Doc Trigger Table**.
+CLAUDE.md links here; keep them in sync.
+```markdown
+# Documentation Navigation
+
+| Goal | Read |
+|---|---|
+| Understand the system | [`OVERVIEW.md`](OVERVIEW.md) |
+| Understand why decisions were made | [`VISION.md`](VISION.md), [`adr/`](adr/FORMAT.md) |
+| Code style and conventions | [`reference/code-conventions.md`](reference/code-conventions.md) |
+| Environment variables | [`reference/environment.md`](reference/environment.md) |
+| Known issues and gaps | [`reference/known-gaps.md`](reference/known-gaps.md) |
+
+## Doc Trigger Table
+
+The moment code changes, update the matching docs in the **same change**.
+
+| Code change | Docs to update |
+|---|---|
+| New module / component added | `OVERVIEW.md`, relevant deep-dive, `CLAUDE.md`/`AGENTS.md` |
+| Behavior of existing component changed | `OVERVIEW.md`, relevant deep-dive |
+| New env variable | `reference/environment.md`, `CLAUDE.md`/`AGENTS.md` |
+| Architectural decision | `adr/` (new ADR, append-only) |
+| New gotcha or constraint | `CLAUDE.md`/`AGENTS.md` (Known Gotchas) |
+| New rule or contract | `CLAUDE.md`/`AGENTS.md` (Critical Rules) — both mirrors |
+```
+
+**docs/VISION.md** — section headers only; the owner fills in content.
+See [vision-guide.md](references/vision-guide.md) for the full writing guide.
 ```markdown
 # Vision
 
@@ -172,7 +221,7 @@ Issues found during work that were out of scope for the running task.
 ## Target State (What "Good" Looks Like)
 ```
 
-**docs/OVERVIEW.md:** Create with section headers:
+**docs/OVERVIEW.md:**
 ```markdown
 # System Overview
 
@@ -183,6 +232,17 @@ Issues found during work that were out of scope for the running task.
 ## Directory Structure
 
 ## Key Contracts
+```
+
+**docs/reference/environment.md:**
+```markdown
+# Environment Variables
+
+Full reference for every variable the project reads. Mirror the summary table in CLAUDE.md.
+
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| _(none yet)_ | | | |
 ```
 
 **docs/reference/known-gaps.md:**
@@ -196,22 +256,21 @@ Issues known but not yet addressed. Update as gaps are found or closed.
 | _(none at init)_ | | |
 ```
 
-## Step 5 — Copy Shared Spec Files
+## Step 5 — Copy Shared Spec Files (from this skill)
 
-These files are identical across all projects. Copy them verbatim from the InsightAI-Platform reference repo:
+These files are identical across all projects. Copy them verbatim from this skill's
+`references/` directory — substitute the skill's absolute path for `<skill-dir>`:
 
 ```bash
-# From reference repo root:
-cp <reference-repo>/tasks/TASK-DESIGN.md         tasks/TASK-DESIGN.md
-cp <reference-repo>/docs/adr/FORMAT.md            docs/adr/FORMAT.md
-cp <reference-repo>/PRDs/FORMAT.md                PRDs/FORMAT.md
-cp <reference-repo>/scripts/validate-project.py   scripts/validate-project.py
+cp <skill-dir>/references/task-design-template.md   tasks/TASK-DESIGN.md
+cp <skill-dir>/references/adr-format-template.md     docs/adr/FORMAT.md
+cp <skill-dir>/references/validate-project.py        scripts/validate-project.py
 chmod +x scripts/validate-project.py
 ```
 
-**Reference repo:** `/Users/mohammedaamirshuaib/Documents/MyProjects/InsightAI-Platform`
-
-If the reference repo is not accessible, use the embedded templates at the bottom of [Codex-md-template.md](Codex-md-template.md).
+`<skill-dir>` is the directory containing this `SKILL.md`
+(e.g. `.claude/skills/project-lifecycle`). Use the Read tool on each reference file and
+write the content if `cp` is not convenient.
 
 ## Step 6 — Create docs/reference/code-conventions.md
 
@@ -239,32 +298,34 @@ python scripts/validate-project.py
 
 Expected: `✅ Project structure valid (<project-name>)`
 
-If it fails, read the error list and fix. Common issues: missing prd.md/kanban.md on epics (none should exist yet, so this should pass).
+The validator checks: epics have `prd.md` + `kanban.md`; every task has `test_criteria`;
+`ACTIVE.md`, `STATUS.md`, `TASK-DESIGN.md`, `docs/NAVIGATION.md`, `docs/adr/FORMAT.md` exist;
+and that `CLAUDE.md` == `AGENTS.md`. At init no epics exist yet, so it should pass cleanly.
 
-Also verify mirrors are identical:
 ```bash
-diff AGENTS.md AGENTS.md   # must produce no output
+diff CLAUDE.md AGENTS.md   # must produce no output
 ```
 
 ## Step 8 — Initial Commit
 
 ```bash
 git add .
-git commit -m "chore: initialize project lifecycle system — tasks/, docs/adr/, PRDs/, AGENTS.md, validation script"
+git commit -m "chore: initialize project lifecycle system — tasks/, docs/, CLAUDE.md, validation script"
 ```
 
 ## Post-Init Checklist
 
-- [ ] AGENTS.md and AGENTS.md are identical (`diff` produces no output)
-- [ ] All `{{PLACEHOLDER}}` values replaced in AGENTS.md/AGENTS.md
+- [ ] CLAUDE.md and AGENTS.md are identical (`diff` produces no output)
+- [ ] All `{{PLACEHOLDER}}` values replaced in CLAUDE.md/AGENTS.md
+- [ ] `docs/NAVIGATION.md` exists with the Doc Trigger Table
+- [ ] `tasks/reviews/` exists
 - [ ] `python scripts/validate-project.py` exits 0
-- [ ] tasks/VISION.md stub created (owner fills in content)
 - [ ] Initial commit made
 
 ## What to Do Next
 
-1. Fill in `docs/VISION.md` — this is the most important document in the repo
+1. Fill in `docs/VISION.md` — the most important document in the repo ([guide](references/vision-guide.md))
 2. Fill in `docs/OVERVIEW.md` with architecture details
 3. Fill in `docs/reference/code-conventions.md` with project-specific conventions
 4. Create the first task in `tasks/future/` before writing any code
-5. Read `tasks/TASK-DESIGN.md` for full task lifecycle rules
+5. Read `tasks/TASK-DESIGN.md` for full task lifecycle rules and PRD format
