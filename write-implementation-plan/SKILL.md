@@ -15,12 +15,15 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** If working in an isolated worktree, it should have been created via the `prepare-isolated-workspace` skill at execution time.
 
+Use this skill only when a detailed durable plan will reduce execution risk. A compact settled change
+may proceed through its focused implementation workflow, and design-only work may stop without a plan.
+
 **Save plans into the AgentKit task tree** (the repo task protocol tracks all meaningful work under `tasks/current/`):
-- If design-before-build already created the task/epic, write the plan there: `tasks/current/<slug>/plan.md` (standalone) or `tasks/current/epic-<slug>/plan.md` (epic).
-- If you arrived here without a task (plan-only request), create the task/epic first — standalone `tasks/current/<slug>/task.md` (with a `test_criteria`), or an epic with `prd.md` + `kanban.md` + `tasks/` — then write the plan into it.
+- If design-before-build already created the task/epic, write the plan there: `tasks/current/task-<slug>/plan.md` (standalone) or `tasks/current/epic-<slug>/plan.md` (epic).
+- A saved implementation plan is a durable artifact. If no task exists, create `tasks/future/task-<slug>/task.md`, move it to `tasks/current/`, update dashboards, then write the plan. Use an epic only when the design has multiple independently testable slices.
 - For an epic, mirror each plan Task into a row in `kanban.md` (and optionally a stub `tasks/<task-id>/task.md` with `test_criteria`) so execution can track status.
 - Update `tasks/ACTIVE.md` / `tasks/STATUS.md` per the repo task protocol.
-- (User preferences for plan location override this default — but keep it inside the task tree.)
+- A user may request a conversational outline instead; that is not this skill and does not create a plan artifact.
 
 ## Scope Check
 
@@ -44,7 +47,10 @@ This structure informs the task decomposition. Each task should produce self-con
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
 - "Run the tests and make sure they pass" - step
-- "Commit" - step
+- "Record the verified checkpoint" - step
+
+Do not include `git add`, `git commit`, push, or PR steps unless the user explicitly authorized that
+Git action for this work. Authorization to implement is not authorization to commit.
 
 ## Plan Document Header
 
@@ -99,12 +105,10 @@ def function(input):
 Run: `pytest tests/path/test.py::test_name -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Record the verified checkpoint**
 
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
+Mark the plan step complete and record the fresh test output in the task artifact. If the user has
+explicitly authorized commits, add a separate exact staging/commit step scoped to these files.
 ````
 
 ## No Placeholders
@@ -121,7 +125,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Exact file paths always
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
-- DRY, YAGNI, TDD, frequent commits
+- DRY, YAGNI, TDD, and evidence-backed checkpoints
 
 ## Self-Review
 

@@ -1,6 +1,6 @@
 ---
 name: verify-before-completion
-description: Use before claiming work is complete, fixed, passing, committed, merged, or ready for review.
+description: Use when about to claim work is complete, fixed, passing, committed, merged, or ready for review.
 ---
 
 # Verify Before Completion

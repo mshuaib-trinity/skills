@@ -18,8 +18,9 @@ the full documentation set. Put durable working rules here; put project detail i
 Fill in every `{{PLACEHOLDER}}` and write the full template below to both files.
 
 **If `CLAUDE.md` / `AGENTS.md` already exist:**
-Do not overwrite blindly. Replace or prepend the lifecycle block between the markers, then
-reconcile duplicated task rules. Keep the stricter rule and delete the weaker duplicate.
+Do not overwrite blindly. Replace or prepend the lifecycle block between the markers, then reconcile
+duplicated rules by intent. Preserve conflicts and ask the owner which behavior governs; “stricter”
+wording is not automatically more correct or more proportional.
 The two files must end identical.
 
 **Always, after writing:**
@@ -50,6 +51,7 @@ For project details, read the source documents:
 
 | Need | Read |
 |---|---|
+| Find context for a work area | [`docs/NAVIGATION.md`](docs/NAVIGATION.md) |
 | Product vision and governing principles | [`docs/VISION.md`](docs/VISION.md) |
 | Current architecture and execution flow | [`docs/OVERVIEW.md`](docs/OVERVIEW.md) |
 | Active work and task state | [`tasks/ACTIVE.md`](tasks/ACTIVE.md) |
@@ -60,17 +62,18 @@ For project details, read the source documents:
 
 ---
 
-## Read First
+## Context Routing
 
-Before any work, read in this order:
+1. Use `route-skills` to classify the request against [`tasks/TASK-DESIGN.md`](tasks/TASK-DESIGN.md).
+2. For operational or micro work, read only the files needed for that operation; do not load the
+   complete lifecycle or create a task.
+3. For tracked work, read [`tasks/ACTIVE.md`](tasks/ACTIVE.md), then use
+   [`docs/NAVIGATION.md`](docs/NAVIGATION.md) to reach the relevant vision, component guide, ADRs,
+   entry points, and tests.
+4. Read [`docs/VISION.md`](docs/VISION.md) for product or architecture decisions. Read ADR format only
+   when an ADR may be required.
 
-1. [`docs/VISION.md`](docs/VISION.md)
-2. [`tasks/ACTIVE.md`](tasks/ACTIVE.md)
-3. [`tasks/TASK-DESIGN.md`](tasks/TASK-DESIGN.md)
-4. [`docs/adr/FORMAT.md`](docs/adr/FORMAT.md)
-5. The relevant project docs for the files you will touch
-
-Do not rely on stale memory for architecture, task state, or rules.
+Prefer current repository sources over stale memory. Do not bulk-read unrelated docs.
 
 ---
 
@@ -92,12 +95,15 @@ Full details belong in [`docs/OVERVIEW.md`](docs/OVERVIEW.md).
 
 ## Working Principles
 
-1. **Use the skill system.** At the start of a task, route through the available skills. If a skill might apply, use it before acting. Project work should follow the build loop:
-   `design-before-build -> stress-test-design -> write-implementation-plan -> execute-implementation-plan -> review-code-changes -> verify-before-completion -> finish-development-branch`.
+1. **Route proportionally.** Start with `route-skills`. Invoke only skills whose triggers match the
+   request; the full build loop is not mandatory for operational, micro, or settled work.
 
-2. **Design before implementation.** For new behavior, workflow changes, architecture changes, unclear requirements, or anything with meaningful trade-offs, use `design-before-build`. Stress-test non-trivial designs with `stress-test-design` before implementation planning.
+2. **Resolve context before asking.** Adopt decisions settled by approved task artifacts, repository
+   or component vision, ADRs, code, and tests. Ask only about material unresolved forks or conflicts.
 
-3. **Tasks are mandatory.** Meaningful work needs a task in `tasks/current/` before code or docs are changed. Create the task in `tasks/future/`, move it to `tasks/current/`, and update `tasks/ACTIVE.md` and `tasks/STATUS.md` when work begins.
+3. **Track by impact, not size.** Operational and behavior-neutral micro work need no task. Runtime,
+   contract, architecture, security, data, provider-boundary, and durable skill/lifecycle changes do.
+   Reuse an active in-scope task before creating another.
 
 4. **Artifacts live with the task.** Designs, plans, grilling notes, review notes, and implementation context belong inside the relevant task or epic directory. Do not create a parallel planning system elsewhere.
 
@@ -105,21 +111,23 @@ Full details belong in [`docs/OVERVIEW.md`](docs/OVERVIEW.md).
 
 6. **Review when the work is ready.** After a feature, behavior change, refactor, or substantial docs/skill change is implemented, run an unprompted code review pass with `review-code-changes` before closure. Treat review findings as work, not optional commentary.
 
-7. **Verify before claims.** Before saying work is complete, fixed, passing, ready, committed, or mergeable, use `verify-before-completion` and run the relevant tests plus `python scripts/validate-project.py`.
+7. **Verify before claims.** Before saying work is complete, fixed, passing, ready, committed, or mergeable, use `verify-before-completion` and run the relevant tests plus `python3 scripts/validate-project.py`.
 
 ---
 
 ## Task Protocol
 
-**Automatic. No user trigger required. No exceptions for meaningful work.**
+**Classification is automatic. Full rules and examples live in
+[`tasks/TASK-DESIGN.md`](tasks/TASK-DESIGN.md).**
 
 ### Before Work
 
-1. Read `tasks/ACTIVE.md`.
-2. If the work is untracked, create `tasks/future/task-<slug>/task.md`.
-3. Move it to `tasks/current/task-<slug>/` when starting.
+1. Classify work as operational, micro, tracked standalone, or epic.
+2. If tracked, read `tasks/ACTIVE.md` and reuse an in-scope task when possible.
+3. Otherwise create `tasks/future/task-<slug>/task.md`, then move it to `tasks/current/` when work starts.
 4. Update `tasks/ACTIVE.md` and `tasks/STATUS.md`.
-5. Do not edit implementation files before the task exists in `tasks/current/`.
+5. Do not write a durable design artifact or implementation change for tracked work before the task
+   exists in `tasks/current/`.
 
 ### During Work
 
@@ -127,7 +135,7 @@ Full details belong in [`docs/OVERVIEW.md`](docs/OVERVIEW.md).
 - Update `tasks/STATUS.md` whenever state changes.
 - For epics, update `kanban.md` immediately when a task changes status.
 - Record out-of-scope discoveries in `tasks/backlog/discovered-issues.md` or create a new task.
-- Keep designs, plans, reviews, and handoffs inside the relevant task directory.
+- Keep tracked-work designs, plans, reviews, and handoffs inside the relevant task directory.
 
 ### Completion Checklist
 
@@ -139,7 +147,7 @@ Full details belong in [`docs/OVERVIEW.md`](docs/OVERVIEW.md).
 - [ ] ADR written if an architectural decision was made
 - [ ] `AGENTS.md` and `CLAUDE.md` mirrored if any rule changed
 - [ ] Relevant tests run
-- [ ] `python scripts/validate-project.py` passes
+- [ ] `python3 scripts/validate-project.py` passes
 
 Completed tasks move immediately to `tasks/completed/`.
 
@@ -166,7 +174,8 @@ Use the repository skills as the workflow system, not as optional references.
 | Creating a continuation note | `create-handoff` |
 | Initializing a new project lifecycle scaffold | `initialize-project-lifecycle` |
 
-Skill outputs must land in the task tree unless the skill explicitly says otherwise.
+Tracked-work skill outputs land in the task tree. Standalone read-only reviews and taskless handoffs
+use the explicit record locations in `tasks/TASK-DESIGN.md`.
 
 ---
 
@@ -176,8 +185,8 @@ Update docs at the same time as the change:
 
 | Change | Documentation |
 |---|---|
-| Architecture or boundary change | `docs/OVERVIEW.md`, relevant deep dive, and ADR if warranted |
-| Component behavior change | relevant component doc under `docs/` |
+| Architecture or system-map change | `docs/OVERVIEW.md`, relevant component guide, and ADR if warranted |
+| Component behavior or contract change | relevant `docs/components/<component>.md` |
 | Environment variable change | `docs/reference/environment.md` |
 | Code convention change | `docs/reference/code-conventions.md` |
 | New durable rule or gotcha | `AGENTS.md` and `CLAUDE.md` only if it belongs in the operating contract; otherwise the relevant docs file |
@@ -191,12 +200,13 @@ ADRs are append-only. Read [`docs/adr/FORMAT.md`](docs/adr/FORMAT.md) before cre
 Violating these creates bugs, security issues, or architectural drift:
 
 1. **Mirror files exactly.** `AGENTS.md == CLAUDE.md`.
-2. **No code before task tracking.** Meaningful work starts only after a task exists in `tasks/current/`.
+2. **No tracked changes before task tracking.** Durable artifacts and implementation for tracked work
+   start only after a task exists in `tasks/current/`; operational and micro work are explicit exceptions.
 3. **No parallel planning systems.** Designs, plans, grilling notes, and handoffs live in `tasks/`.
 4. **No undocumented contract changes.** Code and docs move together.
 5. **No secrets in code or logs.** Load secrets from env vars and redact sensitive data.
 6. **Restricted files require explicit approval:** {{RESTRICTED_FILES}}
-7. **Validation is mandatory.** `python scripts/validate-project.py` must pass before task closure.
+7. **Validation is mandatory.** `python3 scripts/validate-project.py` must pass before task closure.
 
 ---
 
@@ -204,7 +214,7 @@ Violating these creates bugs, security issues, or architectural drift:
 
 ```bash
 {{SETUP_COMMANDS}}
-python scripts/validate-project.py
+python3 scripts/validate-project.py
 ```
 
 Use the subset relevant to the task, plus any targeted tests required by the change.

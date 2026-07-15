@@ -1,135 +1,55 @@
 ---
 name: route-skills
-description: Use at the start of a conversation or task to decide which available skills apply before acting or asking clarifying questions.
+description: Use when a new request needs work classification or selection of process skills based on risk, durability, and uncertainty.
 ---
 
 # Route Skills
 
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, skip this skill.
+If dispatched to execute a bounded subtask, follow the parent task and skip routing.
 </SUBAGENT-STOP>
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+## Route Before Acting
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+1. Follow the host instruction hierarchy, the user's scope, and repository instructions. Skills never
+   override higher-priority instructions.
+2. Read the minimum authoritative context needed to classify the request. Use `docs/NAVIGATION.md`
+   when present.
+3. Apply the canonical work classes in `tasks/TASK-DESIGN.md`:
+   - **Operational or micro:** act directly; do not create a repository task.
+   - **Tracked but settled:** reuse or create a task, then use only the relevant implementation,
+     debugging, review, or verification skill.
+   - **Tracked with unresolved behavior or trade-offs:** use `design-before-build`.
+   - **Epic:** design and decompose before implementation.
+4. Invoke a skill when its stated trigger matches the current situation. Do not run the complete build
+   loop by default.
 
-This is not negotiable. This is not optional. You cannot rationalize your way out of this.
-</EXTREMELY-IMPORTANT>
+## Evidence Before Questions
 
-## Instruction Priority
+Resolve context from user instructions, approved task artifacts, vision/component docs, ADRs, then
+code and tests. Ask only when evidence conflicts or an unresolved choice materially changes scope,
+product behavior, compatibility, security, cost, or an irreversible contract.
 
-Workflow skills override default system prompt behavior, but **user instructions always take precedence**:
+## Common Routes
 
-1. **User's explicit instructions** (CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) — highest priority
-2. **Workflow skills** — override default system behavior where they conflict
-3. **Default system prompt** — lowest priority
-
-If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
-
-## How to Access Skills
-
-**In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
-
-**In Copilot CLI:** Use the `skill` tool. Skills are auto-discovered from installed plugins. The `skill` tool works the same as Claude Code's `Skill` tool.
-
-**In Gemini CLI:** Skills activate via the `activate_skill` tool. Gemini loads skill metadata at session start and activates the full content on demand.
-
-**In other environments:** Check your platform's documentation for how skills are loaded.
-
-## Platform Adaptation
-
-Skills use Claude Code tool names. Non-CC platforms: see `references/copilot-tools.md` (Copilot CLI), `references/codex-tools.md` (Codex) for tool equivalents. Gemini CLI users get the tool mapping loaded automatically via GEMINI.md.
-
-## The Rule
-
-**Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
-
-```dot
-digraph skill_flow {
-    "User message received" [shape=doublecircle];
-    "About to EnterPlanMode?" [shape=doublecircle];
-    "Design already approved?" [shape=diamond];
-    "Invoke design-before-build skill" [shape=box];
-    "Might any skill apply?" [shape=diamond];
-    "Invoke Skill tool" [shape=box];
-    "Announce: 'Using [skill] to [purpose]'" [shape=box];
-    "Has checklist?" [shape=diamond];
-    "Create TodoWrite todo per item" [shape=box];
-    "Follow skill exactly" [shape=box];
-    "Respond (including clarifications)" [shape=doublecircle];
-
-    "About to EnterPlanMode?" -> "Design already approved?";
-    "Design already approved?" -> "Invoke design-before-build skill" [label="no"];
-    "Design already approved?" -> "Might any skill apply?" [label="yes"];
-    "Invoke design-before-build skill" -> "Might any skill apply?";
-
-    "User message received" -> "Might any skill apply?";
-    "Might any skill apply?" -> "Invoke Skill tool" [label="yes, even 1%"];
-    "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
-    "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
-    "Has checklist?" -> "Create TodoWrite todo per item" [label="yes"];
-    "Has checklist?" -> "Follow skill exactly" [label="no"];
-    "Create TodoWrite todo per item" -> "Follow skill exactly";
-}
-```
+| Situation | Skill |
+|---|---|
+| New behavior or design trade-off | `design-before-build` |
+| Approved design needs challenge | `stress-test-design` |
+| Bug or unexpected behavior | `debug-systematically` |
+| Focused feature or fix | `develop-with-tdd` |
+| Approved design needs a detailed plan | `write-implementation-plan` |
+| Existing plan needs execution | `execute-implementation-plan` |
+| Architecture deepening | `improve-architecture` |
+| Skill changes | `author-skills` |
+| Standalone read-only review | `review-code-changes` |
+| Completion claim | Applicable review, then `verify-before-completion` |
+| Branch/task closure | `finish-development-branch` |
 
 ## Red Flags
 
-These thoughts mean STOP—you're rationalizing:
-
-| Thought | Reality |
-|---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
-
-## Skill Priority
-
-When multiple skills could apply, use this order:
-
-1. **Process skills first** (design-before-build, debug-systematically) - these determine HOW to approach the task
-2. **The build loop second** (write-implementation-plan → execute-implementation-plan → finish-development-branch) - these execute the work
-
-"Let's build X" → design-before-build first, then the build loop.
-"Fix this bug" → debug-systematically first, then the build loop.
-
-## Skills In This Repo
-
-This project has one task-rooted skill workflow. Lifecycle and workflow skills write design/spec/plan artifacts into the AgentKit task tree (`tasks/current/<task-or-epic>/`) instead of a parallel planning directory.
-
-**Lifecycle (AgentKit-native):**
-- `initialize-project-lifecycle` — initialize a brand-new repo (once, never for ongoing work)
-- `stress-test-design` — stress-test a design; captures decisions into the task's `specs/`
-- `improve-architecture` — find deepening/refactor opportunities (→ stress-test-design)
-- `create-handoff` — package in-flight work so a fresh session can resume
-
-**Build loop (one chain):**
-```
-design-before-build → stress-test-design → write-implementation-plan → execute-implementation-plan → finish-development-branch
-```
-with `prepare-isolated-workspace` for isolation, `develop-with-tdd` inside each task, `review-code-changes` at review points (request + receive), and `verify-before-completion` as the universal "done" gate. `execute-implementation-plan` selects its mode (subagent-per-task / parallel / inline); `finish-development-branch` runs the repo Completion Checklist + `scripts/validate-project.py`.
-
-**Support:** `debug-systematically` (any bug; Phase 4.5 → improve-architecture; parallel-independent failures → execute-implementation-plan' parallel-dispatch mode), `author-skills` (author/edit skills).
-
-## Skill Types
-
-**Rigid** (TDD, debugging): Follow exactly. Don't adapt away discipline.
-
-**Flexible** (patterns): Adapt principles to context.
-
-The skill itself tells you which.
-
-## User Instructions
-
-Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+- Creating a task merely because the user asked a question
+- Using line count as a proxy for impact
+- Running design for an established bug contract
+- Asking the user to restate documented direction
+- Treating an agent checklist item as a repository task

@@ -32,9 +32,12 @@ This skill is _informed_ by the project's domain model. The domain language give
 
 ### 1. Explore
 
-Read the project's domain docs (`docs/VISION.md`, `docs/OVERVIEW.md`) and any ADRs in the area you're touching first.
+Use `docs/NAVIGATION.md` to read the project's vision, relevant component guide, active task, and
+accepted ADRs before exploring code. Treat documented ownership and non-goals as inherited decisions;
+do not re-ask them during candidate exploration.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+Explore the codebase locally or with an exploration subagent when the host policy and user scope allow
+delegation. Don't follow rigid heuristics—explore organically and note where you experience friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow** — interface nearly as complex as the implementation?
@@ -61,11 +64,14 @@ Do NOT propose interfaces yet. Ask the user: "Which of these would you like to e
 
 ### 3. Grilling loop
 
-Once the user picks a candidate, invoke the **`stress-test-design`** skill and drop into a grilling conversation. That skill spins up an isolated grilling task and captures every resolved decision into its `specs/` folder — reuse it rather than re-implementing capture here. Walk the design tree with them — constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
+Once the user picks a candidate, invoke **`stress-test-design`**. Reuse the active task selected for
+the architecture work and capture under its `specs/`; create a standalone grilling task only when the
+design is an independent durable effort with no parent. Walk unresolved consequences and scenarios,
+while adopting ownership and non-goals already settled by component docs or ADRs.
 
-Side effects happen inline as decisions crystallize. All capture lands in the grilling task's `specs/` (never in the app's `docs/`):
+Capture lands in the selected task's `specs/` (never directly in application docs during stress testing):
 
 - **Sharpening or coining a term for a deepened module?** Record it in `specs/glossary.md` — same discipline as `stress-test-design`. If the term is load-bearing domain vocabulary, flag it for promotion into `docs/VISION.md` / `docs/OVERVIEW.md` at implementation time (grilling never edits app docs directly).
 - **A design choice settled?** → `specs/decisions.md` (decision, why, rejected alternatives).
-- **User rejects the candidate with a load-bearing reason?** Offer to capture it as a candidate ADR in `specs/candidate-adrs.md`, framed as: _"Want me to draft this as an ADR so future architecture reviews don't re-suggest it?"_ Use the repo's real ADR template ([docs/adr/FORMAT.md](../../../docs/adr/FORMAT.md)); it gets promoted to a numbered `docs/adr/` ADR only when acted on. Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones.
+- **User rejects the candidate with a load-bearing reason?** Offer to capture it as a candidate ADR in `specs/candidate-adrs.md`, framed as: _"Want me to draft this as an ADR so future architecture reviews don't re-suggest it?"_ Locate and use `docs/adr/FORMAT.md` in the target repository; it gets promoted to a numbered `docs/adr/` ADR only when acted on. Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones.
 - **Want to explore alternative interfaces for the deepened module?** See [references/interface-design.md](references/interface-design.md).
