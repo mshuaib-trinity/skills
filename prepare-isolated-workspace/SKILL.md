@@ -1,6 +1,6 @@
 ---
 name: prepare-isolated-workspace
-description: Use before feature work or plan execution when the current workspace may contain unrelated changes or an isolated branch or worktree is needed.
+description: Use when feature work or plan execution may overlap unrelated changes or needs an isolated branch or worktree.
 ---
 
 # Prepare Isolated Workspace

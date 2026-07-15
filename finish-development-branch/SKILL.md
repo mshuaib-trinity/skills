@@ -5,6 +5,9 @@ description: Use when implementation and verification are done and the remaining
 
 # Finish Development Branch
 
+Use this skill only to close already-implemented development work. Do not invoke it for `git status`,
+fetch, pull, branch switching, or other mechanical repository operations.
+
 ## Overview
 
 Guide completion of development work by presenting clear options and handling chosen workflow.
@@ -44,7 +47,7 @@ Stop. Don't proceed to Step 2.
 - Set `task.md` `status: completed`; update `kanban.md` (epics only); move the task out of In Progress in `tasks/ACTIVE.md` and update Up Next; update the `tasks/STATUS.md` Last updated line.
 - Update every `docs/` file affected by the change (see the Doc Trigger Table); write an ADR if an architectural decision was made; update root agent instructions if any durable rule/contract changed. In `claude+agents` setups, keep `CLAUDE.md` and `AGENTS.md` mirrored.
 - Move the completed task folder to `tasks/completed/`.
-- **Run:** `python scripts/validate-project.py` — must pass.
+- **Run:** `python3 scripts/validate-project.py` — must pass.
 
 **Gate all of this with verify-before-completion** — run the commands, read the output, and only then claim the task is complete. If no task lifecycle exists in the repo, skip this step.
 
@@ -55,6 +58,9 @@ Stop. Don't proceed to Step 2.
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+git status --short
+git log --oneline <base-branch>..HEAD
+git diff --stat <base-branch>...HEAD
 ```
 
 This determines which menu to show and how cleanup works:
@@ -64,6 +70,11 @@ This determines which menu to show and how cleanup works:
 | `GIT_DIR == GIT_COMMON` (normal repo) | Standard 4 options | No worktree to clean up |
 | `GIT_DIR != GIT_COMMON`, named branch | Standard 4 options | Provenance-based (see Step 6) |
 | `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 3 options (no merge) | No cleanup (externally managed) |
+
+Before merge or PR integration, confirm the intended implementation is represented by commits on the
+branch. If intended files are uncommitted, stop and request commit authorization; do not stage or commit
+implicitly. If there are no branch commits to integrate, do not claim merge/PR readiness. Preserve and
+report unrelated dirty files.
 
 ### Step 3: Determine Base Branch
 
@@ -75,6 +86,10 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 Or ask: "This branch split from main - is that correct?"
 
 ### Step 4: Present Options
+
+If the user already requested one of the safe integration outcomes—merge locally, push/create a PR,
+or keep the branch—honor that instruction after verification instead of asking them to choose again.
+Discard still requires the explicit confirmation below.
 
 **Normal repo and named-branch worktree — present exactly these 4 options:**
 
@@ -114,7 +129,6 @@ cd "$MAIN_ROOT"
 
 # Merge first — verify success before removing anything
 git checkout <base-branch>
-git pull
 git merge <feature-branch>
 
 # Verify tests on merged result
@@ -122,6 +136,9 @@ git merge <feature-branch>
 
 # Only after merge succeeds: cleanup worktree (Step 6), then delete branch
 ```
+
+Do not pull or otherwise synchronize the base branch implicitly. If remote synchronization is requested
+or required, present it as a separate network-changing action and obtain authorization first.
 
 Then: Cleanup worktree (Step 6), then delete branch:
 

@@ -26,17 +26,21 @@ If the user passed an argument, treat it as the focus of the next session and ta
 
 2. **No single task** (exploration, no task yet, or the conversation spans several tasks) → write `tasks/handoffs/<YYYY-MM-DD>-<topic-slug>.md`. Create the `tasks/handoffs/` directory lazily if it does not exist.
 
-To decide: read `tasks/ACTIVE.md`. If exactly one task is In Progress and this conversation is about it, use (1). Otherwise use (2). When in doubt, ask the user which task this continues.
+A central handoff is a continuity record, not a reason to create a repository task.
+
+To decide: read `tasks/ACTIVE.md`. If this conversation clearly belongs to one active task, use (1).
+Otherwise use (2). Ask only when choosing the wrong task would materially misroute the continuation.
 
 ## Drop a resume pointer
 
 After writing the handoff, add or update a single pointer line at the top of `tasks/ACTIVE.md`, just under the `_Updated:_` line:
 
 ```
-▶ Resume: tasks/current/<task-slug>/handoff.md — <one-line focus>
+▶ Resume: <actual-handoff-path> — <one-line focus>
 ```
 
-This is how the next session finds the latest handoff instantly. Keep only the most recent pointer; replace any existing `▶ Resume:` line.
+Use the exact path written above—either the active task path or `tasks/handoffs/...`. Keep only the
+most recent pointer; replace any existing `▶ Resume:` line.
 
 Neither location is scanned by `scripts/validate-project.py`, so handoffs never affect validation.
 

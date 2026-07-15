@@ -8,14 +8,50 @@ Copy this file verbatim to `tasks/TASK-DESIGN.md` at init.
 
 ---
 
-## What Requires a Task Entry
+## Classify Work Before Creating a Task
 
-- **Always create a task:** meaningful changes to logic, structure, or behaviour;
-  anything explicitly requested by the user; **any planning, design-before-build, grilling,
-  or design session** (the session's artifacts live inside the task — see below).
-- **No task needed:** trivial mechanical edits (typo fixes, version bumps, single-line config).
+Task tracking records durable, risky, or coordinated work. It is not a receipt for every user request.
+Classify the work by semantic impact and durability, not line count.
 
-When in doubt: if the change could break something or requires thought, create a task.
+| Class | Repository task? | Examples |
+|---|---|---|
+| **Operational** | No | Read-only inspection or diagnosis, status, fetch, pull, branch switching, running an existing test or formatter |
+| **Micro** | No | Immediately reversible, behavior-neutral edits such as typos, formatting, or comment cleanup |
+| **Tracked standalone** | Yes | Behavior or contract changes, regression fixes, meaningful docs/skills, durable design decisions, coordinated validation |
+| **Epic** | Yes | Multiple independently testable slices, dependencies, owners, or multi-session delivery |
+
+### Always-tracked overrides
+
+Create or reuse a task regardless of apparent size when work changes runtime or production behavior,
+public APIs, security, data or schemas, provider/framework boundaries, architecture, migrations, or
+durable lifecycle and skill rules. A one-line production configuration change can therefore require a
+task while a twenty-line formatting cleanup may not.
+
+### Reuse before creating
+
+Read `tasks/ACTIVE.md` first. If the work is already within an active task's goal and acceptance
+criteria, attach artifacts and progress there. Do not create a duplicate task or a separate grilling
+task for one phase of existing work.
+
+### Record without creating a task
+
+- Standalone read-only reviews and audits may live in `tasks/reviews/`.
+- Cross-session continuity with no active task may live in `tasks/handoffs/`.
+- Unapproved or out-of-scope findings go to `tasks/backlog/discovered-issues.md`.
+- Diagnosis does not authorize remediation; accepted remediation is classified separately.
+
+### Task tracking does not select workflow depth
+
+A task does not automatically require the entire design-to-plan chain:
+
+- Established bug behavior: tracked task + `debug-systematically` + `develop-with-tdd`.
+- Straightforward but high-impact change: tracked task + focused implementation and verification.
+- New behavior or unresolved trade-offs: `design-before-build`, proportional `stress-test-design`,
+  then `write-implementation-plan` when a written plan adds value.
+- Design-only work may end after its durable decisions are captured.
+
+If classification remains genuinely ambiguous, prefer the lower-overhead class only when the work is
+reversible, behavior-neutral, produces no durable decision, and needs no cross-session coordination.
 
 ---
 
@@ -61,8 +97,9 @@ tasks/current/epic-<slug>/
         └── design.md  # output of a design-before-build session (optional)
 ```
 
-When you run a design-before-build or grilling session, create the task first, then write the
-session output into that directory. The session is the work; the task tracks it.
+When a design or grilling session is classified as tracked, create or reuse the task before writing
+its first durable artifact. Disposable ideation that produces no accepted design may remain in the
+conversation. The session becomes tracked work when its decisions are intended to guide future work.
 
 ---
 
@@ -183,7 +220,7 @@ assume are included, are deliberately deferred, or would change the effort signi
 Every task must pass all applicable steps before `status: completed` is set.
 Run this before closing any task — no exceptions, no reminders needed.
 
-**Five mandatory updates:**
+**Seven mandatory updates:**
 
 - [ ] 1. `task.md` — set `status: completed`
 - [ ] 2. `kanban.md` — update row to ✅ completed (epics only)
@@ -207,7 +244,7 @@ Run this before closing any task — no exceptions, no reminders needed.
 
 **Run before closing:**
 ```bash
-python scripts/validate-project.py
+python3 scripts/validate-project.py
 ```
 
 > Work is not complete until all applicable items are checked and the validation script passes.
@@ -216,13 +253,15 @@ python scripts/validate-project.py
 
 ## Lifecycle Rules
 
-1. Create tasks in `future/` first.
+1. Create new tasks in `future/` first.
 2. Move to `current/` and update `ACTIVE.md` when work begins.
 3. A task with unresolved dependencies stays in `current/` with `status: blocked`.
 4. Move to `completed/` only after `test_criteria` passes.
 5. Out-of-scope discoveries go to `backlog/discovered-issues.md` or become a new
    standalone — never absorbed silently into the running task.
 6. Spawned tasks reference their origin: `summary: "Fix X found during epic-Y task-2"`.
+7. Mechanical Git operations never trigger `finish-development-branch`; that skill closes already
+   tracked implementation work.
 
 ---
 
@@ -244,8 +283,10 @@ The skill system is part of the task lifecycle, not an optional helper.
 | About to claim complete, fixed, passing, ready, or mergeable | `verify-before-completion` |
 | Task/branch/PR closure | `finish-development-branch` |
 
-Design, plan, stress-test, review, and handoff artifacts must live in the relevant task
-directory. Skills must not write a parallel planning history outside `tasks/`.
+Design, plan, stress-test, review, and handoff artifacts for tracked work must live in the relevant
+task directory. Standalone read-only review records may live in `tasks/reviews/`, and a handoff with
+no active task may live in `tasks/handoffs/`. Skills must not write a parallel planning history
+outside `tasks/`.
 
 ---
 

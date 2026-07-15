@@ -1,110 +1,126 @@
 ---
 name: stress-test-design
-description: Use when a design, plan, or architecture idea needs challenge, edge-case exploration, decision capture, or the user asks to be grilled or stress-tested.
+description: Use when an approved design, plan, or architecture idea needs consequence analysis, edge-case exploration, contradiction detection, or durable decision capture.
 ---
 
 # Stress Test Design
 
-<what-to-do>
+Challenge consequences and unresolved gaps. Do not ask the user to reconfirm decisions already settled
+by authoritative context.
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+## 1. Locate Durable Context
 
-Ask the questions one at a time, waiting for feedback on each before continuing.
+Read the approved design and the minimum relevant sources through `docs/NAVIGATION.md`. Use this
+authority order:
 
-If a question can be answered by exploring the codebase, explore the codebase instead of asking.
+1. Direct user instruction
+2. Approved design, PRD, or task specification
+3. Repository and component vision
+4. Accepted ADRs and documented architecture
+5. Tests, code, and conventions
 
-The difference from a plain grilling session: **everything we resolve is captured as we go** into an isolated grilling task, so the session leaves a durable record instead of evaporating into the conversation.
+If sources disagree, do not silently choose. Record the contradiction and surface its material effect.
 
-</what-to-do>
+## 2. Reuse or Create the Task
 
-<session-bootstrap>
+Stress testing an existing tracked design belongs to that task:
 
-## Always create the grilling task at the start
+- Reuse its directory and create `specs/` there.
+- Do not create a separate grilling task.
+- Do not complete or move the parent task when stress testing ends.
 
-**If a parent skill already created a task for this work** (e.g. `design-before-build` or `improve-architecture` created `tasks/current/<slug>/` or `tasks/current/epic-<slug>/`), do NOT spawn a separate `task-grill-<slug>`. Create the `specs/` folder **inside that existing task dir** and capture there. The grilling becomes part of that task's record. Only fall through to creating a standalone grilling task below when grilling is invoked on its own with no parent task.
+When invoked independently for a durable design with no parent, create
+`tasks/future/task-grill-<slug>/task.md`, move it to `tasks/current/`, update the dashboards, and
+create `specs/00-overview.md`. Use the formats in
+`references/grilling-task-format.md`.
 
-Before asking the first question, create (or locate) the task. This is non-negotiable — capture-by-default is the entire point of this skill.
+Disposable thought experiments that will not guide future work may remain conversational and untracked.
 
-1. Pick a short slug for the topic (e.g. `workflow-contract`, `auth-rework`).
-2. Create `tasks/current/task-grill-<slug>/task.md` (standalone task — format below).
-3. Create the `tasks/current/task-grill-<slug>/specs/` folder with its starter modules (see [grilling-task-format.md](references/grilling-task-format.md)).
-4. Update `tasks/ACTIVE.md` (add to **In Progress**, type `grill`) and `tasks/STATUS.md` (set the `Last updated` line).
+## 3. Build the Decision Ledger
 
-The `specs/` folder is the **isolated capture area**. It is deliberately separate from the application's real `docs/` — grilling produces draft thinking, not application documentation. Nothing in a grilling task touches `docs/` or the repo root.
+Before asking anything, classify each design branch:
 
-`task.md` for a grilling task:
-
-```yaml
----
-id: task-grill-<slug>
-type: standalone
-status: in_progress
-summary: Grilling session — stress-testing <one-line topic>
-depends_on: []
-blocked_by: ~
-test_criteria: shared understanding reached on <topic>; all resolved context captured in specs/
-created: YYYY-MM-DD
----
-```
-
-</session-bootstrap>
-
-<capture-protocol>
-
-## Write inline, never batch
-
-As each decision crystallises, write it to the right spec module immediately — in the same turn you resolve it. Do not wait until the end of the session to "write it all up"; that is how context gets lost. The spec modules and their formats are defined in [grilling-task-format.md](references/grilling-task-format.md). In short:
-
-| What you just resolved | Where it goes |
+| Class | Action |
 |---|---|
-| The plan / what's under stress-test | `specs/00-overview.md` |
-| A decision + its rationale + rejected alternatives | `specs/decisions.md` |
-| A concrete edge-case scenario you probed | `specs/scenarios.md` |
-| A sharpened or disambiguated term | `specs/glossary.md` |
-| A branch left unresolved | `specs/open-questions.md` |
-| A decision that meets the ADR bar | `specs/candidate-adrs.md` |
+| **Inherited** | Adopt the authoritative decision; record its source |
+| **Inferred** | Decide from aligned sources; record rationale |
+| **Provisional** | Choose a reversible bounded default; record how to revisit |
+| **Contradiction** | Show the conflicting sources and material consequence |
+| **User decision** | Ask only for a high-impact unresolved fork |
 
-</capture-protocol>
+A clear direct instruction, approved design, governing principle, or accepted ADR can settle a branch.
+Current behavior may be inferred from two aligned sources among docs, code, and tests. A reversible local
+choice may be provisional from one established pattern when no source conflicts.
 
-<grilling-technique>
+## 4. Stress Consequences, Not Repository Facts
 
-## Sharpen fuzzy language
+Probe concrete failure and edge-case scenarios:
 
-When I use a vague or overloaded term, propose a precise canonical term and record it in `specs/glossary.md`. "You're saying 'account' — do you mean the Customer or the User? Those are different things." If the same term recurs with a different meaning later, call out the conflict against what's already in the glossary.
+- boundary ownership and dependency direction
+- compatibility and migration
+- invalid, partial, empty, delayed, or duplicated inputs
+- retries, cancellation, concurrency, and recovery
+- security, privacy, cost, and latency where relevant
+- observability, testing, rollout, and reversibility
+- interaction with accepted ADRs and component non-goals
 
-## Discuss concrete scenarios
+When a scenario exposes a real gap:
 
-When domain relationships or behaviours are discussed, stress-test them with specific invented scenarios that probe edge cases and force precision about boundaries. Record the ones that change the design in `specs/scenarios.md`.
+- Decide it automatically when inherited, inferred, or safely provisional.
+- Ask the user only when alternatives remain vision-compatible and materially differ in product value,
+  scope, compatibility, security, cost, or a hard-to-reverse contract.
+- Consolidate related user-owned gaps into one checkpoint. Prefer at most two material questions for a
+  normal stress test; if more remain, the design is probably under-specified and should return to
+  `design-before-build`.
 
-## Cross-reference with code
+## 5. Capture at Coherent Checkpoints
 
-When I state how something works, check whether the code agrees. If you find a contradiction, surface it: "Your code does X, but you just said Y — which is right?" Resolved contradictions become decisions.
+Write decisions after a coherent analysis checkpoint or before switching topics. Do not perform a file
+write for every obvious inherited branch.
 
-## Capture candidate ADRs sparingly
+| Result | File |
+|---|---|
+| Scope and status | `specs/00-overview.md` |
+| Decision, source, rationale, rejected alternative | `specs/decisions.md` |
+| Edge case that changed or pinned behavior | `specs/scenarios.md` |
+| Canonical term | `specs/glossary.md` |
+| Genuinely unresolved branch | `specs/open-questions.md` |
+| ADR-worthy trade-off | `specs/candidate-adrs.md` |
 
-Only flag a decision as ADR-worthy when all three are true:
+Candidate ADRs must be hard to reverse, surprising without context, and the result of a real trade-off.
+Use the repository ADR format, but do not create a numbered ADR during stress testing.
 
-1. **Hard to reverse** — the cost of changing your mind later is meaningful.
-2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
-3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons.
+## 6. Report the Outcome
 
-If any of the three is missing, it is just a decision (`specs/decisions.md`), not a candidate ADR.
+Give the user a compact checkpoint containing:
 
-**Candidate ADRs are drafts, not real ADRs.** Write them into `specs/candidate-adrs.md` using this repo's actual ADR template (Context / Decision / Consequences — see [docs/adr/FORMAT.md](../../../docs/adr/FORMAT.md)). Do **not** create files in `docs/adr/` during grilling: real ADRs are append-only, numbered, and only land when the decision is implemented. The candidate draft is what gets promoted to a numbered `docs/adr/ADR-NNN-<slug>.md` later, during the implementation task — not here.
+- **Decisions inherited from context**
+- **Decisions made for you**
+- **Gaps found and resolved**
+- **Contradictions or user decisions still open**
+- **Scenarios and verification implications**
 
-</grilling-technique>
+Do not ask for approval of decisions the sources already require.
 
-<completion>
+## 7. Close Only What This Session Owns
 
-## Closing the session
+If using a parent feature task:
 
-When shared understanding is reached:
+1. Mark the stress-test status resolved in `specs/00-overview.md`.
+2. Leave the parent `task.md`, folder, and dashboards in their existing implementation state.
+3. Continue to planning, implementation, or stop, according to the approved design.
 
-1. Make sure every resolved item is captured in `specs/` (the test_criteria for the task).
-2. Set `task.md` `status: completed` and move the task folder to `tasks/completed/`.
-3. Update `tasks/ACTIVE.md` (remove from In Progress) and `tasks/STATUS.md` (set the `Last updated` line).
-4. Run `python scripts/validate-project.py` — it must pass.
+If using a standalone `task-grill-<slug>`:
 
-The `specs/` folder is now the durable record. When the plan is actually implemented, the implementation task draws requirements from `specs/`, and any candidate ADRs get promoted into `docs/adr/` in the repo's real format.
+1. Confirm its test criteria and capture are complete.
+2. Mark only that standalone task completed and move it to `tasks/completed/`.
+3. Update dashboards and run `python3 scripts/validate-project.py`.
 
-</completion>
+## Red Flags
+
+- Asking where code belongs when vision or an ADR already settles ownership
+- Asking one question per branch regardless of materiality
+- Treating code as the only auto-resolution source
+- Recording every obvious branch with a separate tool call
+- Silently deciding a conflicting or irreversible product choice
+- Completing a reused parent feature task after its stress-test phase

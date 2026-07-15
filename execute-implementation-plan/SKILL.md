@@ -34,14 +34,18 @@ digraph mode {
 ## Step 1: Load and Review Plan
 
 1. Read the plan file from the task tree (`tasks/current/<task-or-epic>/plan.md`).
-2. Review critically — identify any questions or concerns about the plan.
-3. If concerns: raise them with your human partner before starting.
+2. Review critically and resolve concerns from the approved design, component docs, ADRs, code, and tests.
+3. Raise only material unresolved conflicts or missing authority with your human partner before starting.
 4. If none: create a TodoWrite from the tasks and proceed in the chosen mode.
 
 ## Step 2: Execute Tasks
 
 For each task: mark in_progress → follow each bite-sized step exactly → run the specified verifications →
 mark completed, and update the matching row in the epic's `kanban.md` if the plan lives in an epic.
+
+Git mutation steps require explicit user authorization. If a plan contains an unauthorized stage,
+commit, push, PR, merge, or cleanup step, do not execute it; continue through safe implementation and
+verification, then report the skipped Git action. Implementation authorization alone is insufficient.
 
 **Inline mode specifics:** follow the plan steps directly in this session, running verifications as
 specified. Do not skip verifications. Never start implementation on main/master without explicit user consent.
@@ -57,10 +61,9 @@ After all tasks complete and verified:
 
 ## When to Stop and Ask
 
-Stop immediately when: you hit a blocker (missing dependency, failing test, unclear instruction); the plan
-has critical gaps; you don't understand an instruction; or verification fails repeatedly. Ask for
-clarification rather than guessing. Return to Step 1 if the partner updates the plan or the approach needs
-rethinking. Don't force through blockers.
+Stop when a blocker cannot be resolved from authoritative repository context, the plan has a material
+conflict, required authority is missing, or verification fails repeatedly. Use a reversible local default
+for non-material ambiguity and record it. Return to Step 1 if the plan or approved design changes.
 
 ## References
 
